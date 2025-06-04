@@ -26,7 +26,7 @@ negative_color = "#d65f5f"
 # ----------------------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_parquet("OrderData_clean.parquet")
+    df = pd.read_parquet("orderData_clean2.parquet")
     df["created_at"] = pd.to_datetime(df["created_at"])
     return df
 

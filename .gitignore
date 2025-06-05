@@ -2,3 +2,6 @@ venv/
 __pycache__/
 *.pyc
 .DS_Store
+orderData_clean.csv
+orderData_clean2.parquet
+orderData_clean.parquet

@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
 import json
+import datetime
 from scipy import optimize
 
 # Import Snowflake connector with proper error handling
@@ -50,6 +51,30 @@ def get_snowflake_connection():
             schema=st.secrets["snowflake"]["schema"],
             role=st.secrets["snowflake"]["role"],
             client_session_keep_alive=True,
+            login_timeout=60,
+            network_timeout=60
+        )
+        return conn
+    except Exception as e:
+        st.error(f"Failed to connect to Snowflake: {e}")
+        return None
+
+def get_fresh_connection():
+    """
+    Get a fresh connection for each query to avoid timeout issues
+    """
+    try:
+        conn = sf.connect(
+            user=st.secrets["snowflake"]["user"],
+            password=st.secrets["snowflake"]["password"],
+            account=st.secrets["snowflake"]["account"],
+            warehouse=st.secrets["snowflake"]["warehouse"],
+            database=st.secrets["snowflake"]["database"],
+            schema=st.secrets["snowflake"]["schema"],
+            role=st.secrets["snowflake"]["role"],
+            client_session_keep_alive=True,
+            login_timeout=60,
+            network_timeout=60
         )
         return conn
     except Exception as e:
@@ -59,28 +84,63 @@ def get_snowflake_connection():
 @st.cache_data(show_spinner=True, ttl=600)  # Cache for 10 minutes
 def load_summary_stats():
     """Load basic summary statistics quickly"""
-    conn = get_snowflake_connection()
+    conn = get_fresh_connection()  # Use fresh connection
     if conn is None:
         return {}
     
     try:
-        sql = """
+        # First, let's get the table structure to see what columns exist
+        sql_columns = "DESCRIBE TABLE APP_SCHEMA.ORDER_DATA"
+        columns_df = pd.read_sql(sql_columns, conn)
+        available_columns = [col.upper() for col in columns_df['name'].tolist()]
+        
+        # Build a flexible query based on available columns
+        customer_id_col = None
+        retail_amount_col = None
+        created_at_col = None
+        
+        # Find the right column names
+        for col in available_columns:
+            if 'CUSTOMER' in col and 'ID' in col:
+                customer_id_col = col
+            if 'RETAIL' in col and 'AMOUNT' in col:
+                retail_amount_col = col
+            if 'CREATED' in col and 'AT' in col:
+                created_at_col = col
+        
+        # Build the query with available columns
+        sql = f"""
         SELECT 
             COUNT(*) as total_orders,
-            COUNT(DISTINCT customer_id_number) as unique_customers,
-            SUM(retail_amount) as total_revenue,
-            AVG(retail_amount) as avg_order_value,
-            MIN(created_at) as min_date,
-            MAX(created_at) as max_date
+            {f"COUNT(DISTINCT {customer_id_col}) as unique_customers" if customer_id_col else "0 as unique_customers"},
+            {f"SUM({retail_amount_col}) as total_revenue" if retail_amount_col else "0 as total_revenue"},
+            {f"AVG({retail_amount_col}) as avg_order_value" if retail_amount_col else "0 as avg_order_value"},
+            {f"MIN({created_at_col}) as min_date" if created_at_col else "CURRENT_DATE as min_date"},
+            {f"MAX({created_at_col}) as max_date" if created_at_col else "CURRENT_DATE as max_date"}
         FROM APP_SCHEMA.ORDER_DATA
         """
         
         result = pd.read_sql(sql, conn)
+        # Convert column names to lowercase for consistency
+        result.columns = [col.lower() for col in result.columns]
         return result.iloc[0].to_dict()
         
     except Exception as e:
         st.error(f"Error loading summary stats: {e}")
-        return {}
+        # Return basic stats if query fails
+        try:
+            basic_sql = "SELECT COUNT(*) as total_orders FROM APP_SCHEMA.ORDER_DATA"
+            basic_result = pd.read_sql(basic_sql, conn)
+            return {
+                'total_orders': basic_result.iloc[0]['total_orders'],
+                'unique_customers': 0,
+                'total_revenue': 0,
+                'avg_order_value': 0,
+                'min_date': None,
+                'max_date': None
+            }
+        except:
+            return {}
     finally:
         if conn:
             conn.close()
@@ -90,93 +150,52 @@ def load_filtered_data(start_date, end_date, payment_types=None, limit=50000):
     """
     Load filtered data based on user selections with performance optimizations
     """
-    conn = get_snowflake_connection()
+    conn = get_fresh_connection()  # Use fresh connection
     if conn is None:
         return pd.DataFrame()
     
     try:
-        # Build WHERE clause
+        # Build WHERE clause with uppercase column names (Snowflake style)
         where_conditions = [
-            f"created_at >= '{start_date}'",
-            f"created_at <= '{end_date}'"
+            f"CREATED_AT >= '{start_date}'",
+            f"CREATED_AT <= '{end_date}'"
         ]
         
         if payment_types:
             payment_list = "', '".join(payment_types)
-            where_conditions.append(f"payment_type_name IN ('{payment_list}')")
+            where_conditions.append(f"PAYMENT_TYPE_NAME IN ('{payment_list}')")
         
         where_clause = " AND ".join(where_conditions)
         
+        # Simple approach - select all columns and let pandas handle it
         sql = f"""
-        SELECT
-            id,
-            created_at,
-            accounted_at,
-            order_type_name,
-            order_action_name,
-            retail_amount,
-            retailer_discounted_amount,
-            payment_type_name,
-            order_metadata,
-            customer_reference,
-            customer_created_at,
-            customer_updated_at,
-            customer_type_name,
-            customer_attributes,
-            customer_status_code,
-            customer_status,
-            customer_address3,
-            customer_address4,
-            customer_address5,
-            customer_id_number,
-            customer_id_type,
-            retailer_name,
-            retailer_type_name,
-            retailer_attributes,
-            retailer_status_code,
-            retailer_status,
-            product_name,
-            product_type_desc,
-            product_sku,
-            product_price_fixed,
-            product_price_min,
-            product_price_max,
-            product_details,
-            order_item_id,
-            order_item_created_at,
-            order_item_accounted_at,
-            order_item_product_id,
-            order_item_qty,
-            order_item_retail_amount,
-            order_item_provision_type_name,
-            order_item_provisioned_units,
-            order_item_provisioned_unit_type_name,
-            birth_year,
-            customer_age,
-            age_group,
-            province,
-            ext_voucher_msisdn,
-            ext_voucher_serial,
-            ext_voucher_source_irn,
-            sim_imsi,
-            sim_iccid,
-            voucher_serial,
-            voucher_legacy_txn_irn,
-            bundleSize,
-            serviceType,
-            payment_cohort
+        SELECT *
         FROM APP_SCHEMA.ORDER_DATA
         WHERE {where_clause}
-        ORDER BY created_at DESC
+        ORDER BY CREATED_AT DESC
         LIMIT {limit}
         """
         
         df = pd.read_sql(sql, conn)
         
-        # Data type conversions
+        # Data type conversions - convert all column names to lowercase
         df.columns = [col.lower() for col in df.columns]
-        df["created_at"] = pd.to_datetime(df["created_at"])
-        df["customer_created_at"] = pd.to_datetime(df["customer_created_at"])
+        
+        # Convert datetime columns (using lowercase names now)
+        datetime_cols = ['created_at', 'customer_created_at', 'customer_updated_at', 
+                        'order_item_created_at', 'order_item_accounted_at', 'accounted_at']
+        for col in datetime_cols:
+            if col in df.columns:
+                df[col] = pd.to_datetime(df[col], errors='coerce')
+        
+        # Handle numeric columns that might be strings
+        numeric_cols = ['retail_amount', 'retailer_discounted_amount', 'product_price_fixed',
+                       'product_price_min', 'product_price_max', 'order_item_qty',
+                       'order_item_retail_amount', 'order_item_provisioned_units',
+                       'birth_year', 'customer_age', 'bundlesize']
+        for col in numeric_cols:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
         
         # Create bundleSize_MB if bundlesize exists
         if 'bundlesize' in df.columns and not df['bundlesize'].isna().all():
@@ -802,13 +821,34 @@ tab = st.sidebar.radio(
 # 2) Date Range Filter with dynamic defaults
 min_date, max_date = get_date_range()
 if min_date and max_date:
-    # Default to last 3 months for performance
-    default_start = max_date - pd.Timedelta(days=90)
+    # Ensure we have date objects, not datetime objects
+    import datetime
+    
+    if isinstance(min_date, pd.Timestamp):
+        min_date = min_date.date()
+    elif isinstance(min_date, datetime.datetime):
+        min_date = min_date.date()
+        
+    if isinstance(max_date, pd.Timestamp):
+        max_date = max_date.date()
+    elif isinstance(max_date, datetime.datetime):
+        max_date = max_date.date()
+    
+    # Calculate default start date, but ensure it's not before min_date
+    default_start_attempt = max_date - datetime.timedelta(days=90)
+    default_start = max(default_start_attempt, min_date)  # Use the later of the two dates
+    
+    # Show available date range to user
+    if min_date == max_date:
+        st.sidebar.info(f"📅 Data available for: {min_date}")
+    else:
+        st.sidebar.info(f"📅 Data available from {min_date} to {max_date}")
+    
     start_date, end_date = st.sidebar.date_input(
         "Date Range:",
-        value=[default_start.date(), max_date.date()],
-        min_value=min_date.date(),
-        max_value=max_date.date(),
+        value=[default_start, max_date],
+        min_value=min_date,
+        max_value=max_date,
     )
 else:
     st.sidebar.error("Unable to load date range from database")
@@ -877,6 +917,38 @@ if start_date and end_date:
             count = len(df)
             st.subheader(f"Data Points: {count:,}")
             st.write(f"Visualizations for **{tab}**, between **{start_date}** and **{end_date}**.")
+
+            # Debug information - show what data we actually have
+            if not df.empty:
+                st.markdown("### 🔍 Data Debug Information")
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric("Total Rows", f"{len(df):,}")
+                
+                with col2:
+                    if 'created_at' in df.columns:
+                        date_range = (df['created_at'].max() - df['created_at'].min()).days
+                        st.metric("Date Range (Days)", f"{date_range}")
+                    else:
+                        st.metric("Date Range", "No date column")
+                
+                with col3:
+                    if 'created_at' in df.columns:
+                        unique_dates = df['created_at'].dt.date.nunique()
+                        st.metric("Unique Dates", f"{unique_dates}")
+                    else:
+                        st.metric("Unique Dates", "N/A")
+                
+                # Show date range
+                if 'created_at' in df.columns:
+                    st.write(f"**Date Range in Data:** {df['created_at'].min()} to {df['created_at'].max()}")
+                
+                # Show sample data
+                st.markdown("**Sample Data:**")
+                display_cols = ['created_at', 'retail_amount', 'product_name', 'payment_type_name']
+                available_cols = [col for col in display_cols if col in df.columns]
+                st.dataframe(df[available_cols].head(), use_container_width=True)
 
             # 1) Weekly KPIs
             st.markdown("### Weekly KPI Trends")

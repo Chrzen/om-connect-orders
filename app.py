@@ -7,6 +7,8 @@ import json
 import datetime
 from scipy import optimize
 
+TABLE_NAME = "APP_SCHEMA.ORDER_DATA_10062025"
+
 # Import Snowflake connector with proper error handling
 try:
     import snowflake.connector as sf
@@ -90,7 +92,8 @@ def load_summary_stats():
     
     try:
         # First, let's get the table structure to see what columns exist
-        sql_columns = "DESCRIBE TABLE APP_SCHEMA.ORDER_DATA"
+        # sql_columns = "DESCRIBE TABLE APP_SCHEMA.ORDER_DATA"
+        sql_columns = f"DESCRIBE TABLE {TABLE_NAME}"
         columns_df = pd.read_sql(sql_columns, conn)
         available_columns = [col.upper() for col in columns_df['name'].tolist()]
         
@@ -117,7 +120,7 @@ def load_summary_stats():
             {f"AVG({retail_amount_col}) as avg_order_value" if retail_amount_col else "0 as avg_order_value"},
             {f"MIN({created_at_col}) as min_date" if created_at_col else "CURRENT_DATE as min_date"},
             {f"MAX({created_at_col}) as max_date" if created_at_col else "CURRENT_DATE as max_date"}
-        FROM APP_SCHEMA.ORDER_DATA
+            FROM {TABLE_NAME}
         """
         
         result = pd.read_sql(sql, conn)
@@ -170,7 +173,7 @@ def load_filtered_data(start_date, end_date, payment_types=None, limit=50000):
         # Simple approach - select all columns and let pandas handle it
         sql = f"""
         SELECT *
-        FROM APP_SCHEMA.ORDER_DATA
+        FROM {TABLE_NAME}
         WHERE {where_clause}
         ORDER BY CREATED_AT DESC
         LIMIT {limit}

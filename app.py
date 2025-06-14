@@ -218,6 +218,7 @@ def load_summary_stats():
             conn.close()
 
 @st.cache_data(show_spinner=True, ttl=300)  # Cache for 5 minutes
+@st.cache_data(show_spinner=True, ttl=300)  # Cache for 5 minutes
 def load_filtered_data(start_date, end_date, payment_types=None, limit=50000):
     """
     Load filtered data based on user selections with performance optimizations
@@ -253,21 +254,38 @@ def load_filtered_data(start_date, end_date, payment_types=None, limit=50000):
         # Data type conversions - convert all column names to lowercase
         df.columns = [col.lower() for col in df.columns]
 
-        # Convert datetime columns (using lowercase names now)
-        datetime_cols = ['created_at', 'customer_created_at', 'customer_updated_at',
-                        'order_item_created_at', 'order_item_accounted_at', 'accounted_at']
-        for col in datetime_cols:
-            if col in df.columns:
+        # --- START: INSERT YOUR NEW CODE HERE ---
+
+        # Convert all columns ending with '_at' to datetime, coercing errors
+        for col in df.columns:
+            if col.endswith('_at'):
                 df[col] = pd.to_datetime(df[col], errors='coerce')
 
-        # Handle numeric columns that might be strings
-        numeric_cols = ['retail_amount', 'retailer_discounted_amount', 'product_price_fixed',
-                       'product_price_min', 'product_price_max', 'order_item_qty',
-                       'order_item_retail_amount', 'order_item_provisioned_units',
-                       'birth_year', 'customer_age', 'bundlesize']
-        for col in numeric_cols:
+        # If column in df does not contain a '_amount' change the type to string
+        # Exclude other specific numeric columns
+        numeric_cols = ['birth_year', 'customer_age', 'order_item_qty', 'bundlesize'] # Add any other known numerics
+        for col in df.columns:
+            if not col.endswith('_amount') and not col.endswith('_at') and col not in numeric_cols:
+                if col in df.columns: # Check if column exists before conversion
+                    df[col] = df[col].astype(str)
+
+        # Convert specific columns to numeric types safely
+        # Using pd.to_numeric is safer as it handles potential non-numeric values gracefully
+        numeric_to_convert = ['retail_amount', 'retailer_discounted_amount', 'product_price_fixed',
+                              'product_price_min', 'product_price_max', 'order_item_qty',
+                              'order_item_retail_amount', 'order_item_provisioned_units',
+                              'birth_year', 'customer_age', 'bundlesize']
+        for col in numeric_to_convert:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
+
+        # Convert birth_year and age to int after handling decimals/errors
+        if 'birth_year' in df.columns:
+            df['birth_year'] = df['birth_year'].dropna().astype(int)
+        if 'customer_age' in df.columns:
+            df['customer_age'] = df['customer_age'].dropna().astype(int)
+
+        # --- END: NEW CODE SECTION ---
 
         # Create bundleSize_MB if bundlesize exists
         if 'bundlesize' in df.columns and not df['bundlesize'].isna().all():
@@ -920,7 +938,7 @@ def display_dashboard_content(tab, start_date, end_date):
 
             # Debug information - show what data we actually have
             if not df.empty:
-                st.markdown("### ðŸ” Data Debug Information")
+                st.markdown("### Data Debug Information")
                 col1, col2, col3 = st.columns(3)
 
                 with col1:
@@ -1083,7 +1101,7 @@ summary_stats = load_summary_stats()
 # ----------------------------------------
 # Sidebar: Title & Filters
 # ----------------------------------------
-st.sidebar.title("âŸ¡ Order Data Filters âŸ¡")
+st.sidebar.title("Order Data Filters")
 st.sidebar.markdown("Use the controls below to filter data across all tabs.\n")
 
 # Display summary stats in sidebar
@@ -1115,9 +1133,9 @@ if min_date and max_date:
 
     # Show available date range to user
     if min_date == max_date:
-        st.sidebar.info(f"ðŸ“… Data available for: {min_date}")
+        st.sidebar.info(f"“… Data available for: {min_date}")
     else:
-        st.sidebar.info(f"ðŸ“… Data available from {min_date} to {max_date}")
+        st.sidebar.info(f"“… Data available from {min_date} to {max_date}")
 
     start_date, end_date = st.sidebar.date_input(
         "Date Range:",
@@ -1230,7 +1248,7 @@ st.markdown("""
 # Performance Tips (shown in sidebar)
 # ----------------------------------------
 st.sidebar.markdown("---")
-st.sidebar.markdown("### ðŸ’¡ Performance Tips")
+st.sidebar.markdown("### ’¡ Performance Tips")
 st.sidebar.markdown("""
 - Use shorter date ranges for faster loading
 - Data is cached for 5 minutes
@@ -1239,7 +1257,7 @@ st.sidebar.markdown("""
 """)
 
 if summary_stats:
-    st.sidebar.markdown("### ðŸ“Š Database Overview")
+    st.sidebar.markdown("### “Š Database Overview")
     st.sidebar.markdown(f"""
     - **Total Records**: {summary_stats.get('total_orders', 0):,}
     - **Date Range**: {summary_stats.get('min_date', 'N/A')} to {summary_stats.get('max_date', 'N/A')}

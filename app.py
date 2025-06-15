@@ -27,20 +27,28 @@ st.set_page_config(
 )
 
 # styling
+# styling
+# styling
 st.markdown("""
 <style>
     /* --- GEMINI FINAL UI --- */
 
-    /* 1. BACKGROUND PATTERN (DARK MODE ONLY) */
+    /* 1. BACKGROUND PATTERN (DARK MODE ONLY) - New Abstract Pattern */
     .stApp[data-theme="dark"] {
-        background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4" viewBox="0 0 4 4"><path fill="%2300524C" fill-opacity="0.4" d="M1 3h1v1H1V3zm2-2h1v1H3V1z"></path></svg>');
-    }
+    background-color: transparent !important;
+    background-image: url("https://www.transparenttextures.com/patterns/graphy.png");
+    background-repeat: repeat;
+    background-size: auto;
+}
 
-    /* 2. PLOT CONTAINER (THE TILE) */
-    .plot-container {
+
+    /* 2. PLOT CONTAINER (THE TILE) - Now with more transparency */
+    /* This now excludes the main tab container by checking that it doesn't contain a header (h2) */
+    div[data-testid="stVerticalBlock"]:has(h5):has(.stPlotlyChart):not(:has(h2)) {
         padding: 1rem 1.5rem 1.5rem 1.5rem;
         border-radius: 15px;
-        background-color: rgba(14, 17, 23, 0.85);
+        /* The original background-color was rgba(14, 17, 23, 0.85). We reduce the last value (alpha) to increase transparency */
+        background-color: rgba(14, 17, 23, 0.7); 
         border: 1px solid #00524C;
         box-shadow: 0 8px 16px rgba(0,0,0,0.3);
         backdrop-filter: blur(8px);
@@ -122,6 +130,63 @@ st.markdown("""
         color: #0e1117 !important;
         font-weight: 700 !important;
     }
+            
+            /* 5. INFO ICON & TOOLTIP */
+    .info-icon {
+        display: inline-block;
+        margin-left: 8px;
+        color: #a0a0a0;
+        cursor: help;
+        position: relative;
+    }
+    .info-icon .tooltip-text {
+        visibility: hidden;
+        width: 350px;
+        background-color: #262730;
+        color: #fff;
+        text-align: left;
+        font-style: normal;
+        font-size: 14px;
+        font-weight: normal;
+        border-radius: 6px;
+        padding: 10px;
+        position: absolute;
+        z-index: 1000;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -175px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    }
+    .info-icon:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    /* 6. SECTION NAVIGATION BAR */
+    .section-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+        background-color: rgba(40, 40, 40, 0.5);
+        backdrop-filter: blur(5px);
+    }
+    .section-nav a {
+        color: #d0d0d0;
+        background-color: #00524C;
+        padding: 8px 12px;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: background-color 0.3s, color 0.3s;
+    }
+    .section-nav a:hover {
+        background-color: #8CC63F;
+        color: black;
+    }
 
 </style>
 """, unsafe_allow_html=True)
@@ -131,8 +196,8 @@ st.markdown("""
 # Color Palette
 # ----------------------------------------
 oldmutual_palette = [
-    "#006B54", "#1A8754", "#5AAA46",
-    "#8CC63F", "#00524C", "#E6F2E2"
+    "#00524C", "#006B54", "#1A8754", "#5AAA46",
+    "#8CC63F", "#E6F2E2"
 ]
 negative_color = "#d65f5f"
 
@@ -679,6 +744,7 @@ def plot_split_sunbursts(df):
     # --- Plot 1: Sunburst by Province with theme colors ---
     px_fig_province = px.sunburst(
         df_filtered, path=['province', 'product_category'], values='retail_amount',
+        color="product_category",  # <-- Add this line
         color_discrete_sequence=oldmutual_palette
     )
     fig.add_trace(px_fig_province.data[0], row=1, col=1)
@@ -686,6 +752,7 @@ def plot_split_sunbursts(df):
     # --- Plot 2: Sunburst by Age Group with theme colors ---
     px_fig_age = px.sunburst(
         df_filtered, path=['age_group', 'product_category'], values='retail_amount',
+        color="product_category",  # <-- And add this line
         color_discrete_sequence=oldmutual_palette
     )
     fig.add_trace(px_fig_age.data[0], row=1, col=2)
@@ -860,8 +927,15 @@ def plot_product_type_timeline(df):
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         font_color='white',
-        legend_title_text='Product Type',
-        height=450  # Set standard height
+        height=450,  # Set standard height
+        # Add this legend dictionary to position it at the top
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        )
     )
     fig.update_xaxes(gridcolor='rgba(255, 255, 255, 0.2)')
     fig.update_yaxes(gridcolor='rgba(255, 255, 255, 0.2)')
@@ -1209,11 +1283,7 @@ def plot_cohort_analysis(df):
     df['cohort_week_num'] = (df['activity_week'] - df['cohort_week']).dt.days // 7
 
     fig = make_subplots(
-        rows=1, cols=2,
-        subplot_titles=(
-            "Cumulative Revenue by Weekly Cohort (Top 5)",
-            "Average SIM Value Growth Curve (LTV)"
-        )
+        rows=1, cols=2
     )
 
     cohort_revenue = df.groupby(['cohort_week', 'cohort_week_num'])['retail_amount'].sum().unstack(fill_value=0)
@@ -1469,24 +1539,57 @@ def plot_product_correlation_matrix(df):
 # ----------------------------------------
 # Helper function for layout
 # ----------------------------------------
-def plot_in_a_box(title: str, fig):
+# ----------------------------------------
+# Helper function for layout
+# ----------------------------------------
+def plot_in_a_box(title: str, fig, info_text: str, anchor_id: str):
     """
-    A helper function to wrap a Plotly figure in a styled "tile" or "box".
+    A helper function to group a title, an info icon, a chart, and an HTML anchor.
     """
     if fig is None:
-        return # Don't display anything if the figure is None
+        return
 
-    st.markdown(f'<div class="plot-container">', unsafe_allow_html=True)
-    st.markdown(f"<h5>{title}</h5>", unsafe_allow_html=True)
+    # Add an invisible HTML anchor for the navigation link
+    st.markdown(f"<div id='{anchor_id}'></div>", unsafe_allow_html=True)
     
-    # We add a unique 'key' to prevent the DuplicateElementId error.
-    st.plotly_chart(fig, use_container_width=True, key=title)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.container():
+        # Display title with a hoverable info icon
+        st.markdown(
+            f"""
+            <h5>
+                {title}
+                <span class="info-icon">
+                    &#8505;
+                    <span class="tooltip-text">{info_text}</span>
+                </span>
+            </h5>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.plotly_chart(fig, use_container_width=True, key=title)
 
 # ----------------------------------------
 # Function to display content for a single tab
 # ----------------------------------------
+# ----------------------------------------
+# Function to display content for a single tab
+# ----------------------------------------
+# Info text definitions
+info_texts = {
+    "kpis": "This chart shows daily total revenue (green line, left axis) and number of orders (green bars, right axis). It helps to spot daily trends and see how sales volume and revenue correlate.",
+    "prod_type": "This stacked bar chart displays the daily number of orders, broken down by product type. Each color represents a different product type, allowing you to see which product categories are most popular each day.",
+    "weekly_kpis": "This dashboard presents a weekly overview of key performance indicators (KPIs). The top row shows absolute weekly numbers for orders, revenue, and unique customers. The bottom row displays the week-over-week growth rate for each KPI.",
+    "propensity": "This chart shows how quickly customers make another purchase after buying a specific top-selling product. A steeper curve means customers repurchase faster. For example, a point at (30, 60%) means 60% of customers who bought that product made their next purchase within 30 days.",
+    "growth": "These bars show the week-over-week (WoW) and month-over-month (MoM) growth for revenue and orders, based on the most recent data in the selected range. It's a quick way to assess recent performance momentum.",
+    "sankey": "This Sankey diagram illustrates the flow of customers between their first four product purchases. The width of the flow represents the number of customers. This helps to understand common purchase paths and which products lead to follow-up sales.",
+    "bundle": "The left chart compares order counts (bars) with revenue (line) for specific product bundles to identify popularity vs profitability. The right chart shows the weekly popularity of these bundles as a stacked bar chart, revealing trends over time.",
+    "lifecycle": "This analyzes customer behavior based on how long it has been since their first purchase. It shows average order value, purchase frequency, top product preferences at each stage, and the cumulative revenue generated over their tenure.",
+    "cohort": "This provides a cohort analysis based on customer acquisition week. The left plot shows cumulative revenue for the top 5 weekly cohorts. The right plot shows average cumulative revenue per customer, with a projection of the 1-year Lifetime Value (LTV) based on the trend.",
+    "geo_demo": "These charts break down revenue and customer engagement by location and age group. Bar charts show total revenue, while line charts show the average number of orders per SIM. This helps identify key customer segments and regions.",
+    "prod_corr": "This heatmap shows the correlation between purchases of the top 12 products. A value closer to 1.0 (darker green) indicates that customers who buy one product are more likely to also buy the other, revealing cross-selling opportunities.",
+    "sunbursts": "These sunburst charts provide a hierarchical view of revenue. The left chart breaks down revenue by province, then product category. The right chart breaks it down by age group, then product category. Click on segments to drill down."
+}
+
 def display_dashboard_content(tab, start_date, end_date):
     """
     Loads data and renders visualizations for a specific tab.
@@ -1500,91 +1603,86 @@ def display_dashboard_content(tab, start_date, end_date):
     }
     selected_payment_types = payment_type_map.get(tab, [])
 
-    period_length = (end_date - start_date)
-    comparison_start_date = start_date - period_length - datetime.timedelta(days=1)
-
     with st.spinner(f"Loading {tab} data..."):
-        if tab == "Standard Payments":
-             df = load_filtered_data(comparison_start_date, end_date, selected_payment_types)
-        elif tab == "Raw":
-            df = load_filtered_data(start_date, end_date, limit=25000)
-        else:
-            df = load_filtered_data(start_date, end_date, selected_payment_types)
+        df = load_filtered_data(start_date, end_date, selected_payment_types, limit=200000)
 
-    if tab != "Raw" and not df.empty:
-        df = df[df["payment_type_name"].isin(selected_payment_types)].copy()
-
-    main_period_df = df[(pd.to_datetime(df['created_at']).dt.date >= start_date) & (pd.to_datetime(df['created_at']).dt.date <= end_date)].copy()
-
-    is_data_valid = validate_data(main_period_df)
-    
-    st.header(f"{tab} Insights")
-    
-    if not is_data_valid:
+    if not validate_data(df):
         st.info(f"No {tab} data found for the selected date range.")
         return
 
     if tab == "Standard Payments":
-        # --- Pre-generate all figures to avoid rendering empty tiles ---
-        fig_kpis = safe_plot_daily_kpis(main_period_df)
-        fig_prod_type = safe_plot_product_timeline(main_period_df)
-        fig_weekly_kpis = safe_plot_weekly_kpis(main_period_df)
-        fig_propensity = safe_plot_repurchase_propensity(main_period_df)
-        fig_growth = safe_plot_growth_bars(main_period_df)
-        fig_sankey = safe_plot_purchase_sequence_sankey(main_period_df)
-        fig_bundle = safe_plot_bundle_analysis(main_period_df)
-        fig_lifecycle = safe_plot_customer_lifecycle(main_period_df)
-        fig_cohort = safe_plot_cohort_analysis(main_period_df)
-        fig_geo_demo = safe_plot_geo_demographic_overview(main_period_df)
-        fig_prod_corr = safe_plot_product_correlation_matrix(main_period_df)
-        fig_sunbursts = safe_plot_split_sunbursts(main_period_df)
+        # --- Section Definitions for Navigation ---
+        sections = {
+            "Daily Revenue and Order Volume": "daily-revenue",
+            "Order Volume by Product Type": "product-volume",
+            "Weekly Performance": "weekly-performance",
+            "Repurchase Propensity Analysis": "repurchase-propensity",
+            "Recent Growth (WoW & MoM)": "recent-growth",
+            "Customer Purchase Journey": "purchase-journey",
+            "Bundle Purchase Analysis": "bundle-analysis",
+            "Customer Lifecycle Analysis": "customer-lifecycle",
+            "Cohort & LTV Analysis": "cohort-analysis",
+            "Geographic & Demographic Insights": "geo-insights",
+            "Product Purchase Correlation": "product-correlation",
+            "Revenue by Province & Age Group": "revenue-breakdown",
+        }
+        
+        # --- Create Navigation Bar ---
+        nav_html = "<div class='section-nav'>"
+        for title, anchor in sections.items():
+            nav_html += f"<a href='#{anchor}'>{title}</a>"
+        nav_html += "</div>"
+        st.markdown(nav_html, unsafe_allow_html=True)
+        
+        # --- Pre-generate all figures ---
+        fig_kpis = plot_daily_kpis(df)
+        fig_prod_type = plot_product_type_timeline(df)
+        fig_weekly_kpis = plot_weekly_kpis(df)
+        fig_propensity = plot_repurchase_propensity(df)
+        fig_growth = plot_growth_bars(df)
+        fig_sankey = plot_purchase_sequence_sankey(df)
+        fig_bundle = plot_bundle_analysis(df)
+        fig_lifecycle = plot_customer_lifecycle(df)
+        fig_cohort = plot_cohort_analysis(df)
+        fig_geo_demo = plot_geo_demographic_overview(df)
+        fig_prod_corr = plot_product_correlation_matrix(df)
+        fig_sunbursts = plot_split_sunbursts(df)
 
-        # --- Render Layout ---
-        
-        # Row 1
-        if fig_kpis or fig_prod_type:
-            col1, col2 = st.columns(2)
-            with col1:
-                plot_in_a_box("Daily Revenue and Order Volume", fig_kpis)
-            with col2:
-                plot_in_a_box("Order Volume by Product Type", fig_prod_type)
+        # --- Render Layout using plot_in_a_box ---
+        col1, col2 = st.columns(2)
+        with col1:
+            plot_in_a_box("Daily Revenue and Order Volume", fig_kpis, info_texts["kpis"], "daily-revenue")
+        with col2:
+            plot_in_a_box("Order Volume by Product Type", fig_prod_type, info_texts["prod_type"], "product-volume")
 
-        # Row 2 (Full Width)
-        plot_in_a_box("Weekly Performance", fig_weekly_kpis)
+        plot_in_a_box("Weekly Performance", fig_weekly_kpis, info_texts["weekly_kpis"], "weekly-performance")
         
-        # Row 3
-        if fig_propensity or fig_growth:
-            col3, col4 = st.columns(2)
-            with col3:
-                plot_in_a_box("Repurchase Propensity Analysis", fig_propensity)
-            with col4:
-                plot_in_a_box("Recent Growth (WoW & MoM)", fig_growth)
+        col3, col4 = st.columns(2)
+        with col3:
+            plot_in_a_box("Repurchase Propensity Analysis", fig_propensity, info_texts["propensity"], "repurchase-propensity")
+        with col4:
+            plot_in_a_box("Recent Growth (WoW & MoM)", fig_growth, info_texts["growth"], "recent-growth")
 
-        # Row 4 (Full Width)
-        plot_in_a_box("Customer Purchase Journey (Sankey Diagram)", fig_sankey)
+        plot_in_a_box("Customer Purchase Journey", fig_sankey, info_texts["sankey"], "purchase-journey")
+        plot_in_a_box("Bundle Purchase Analysis", fig_bundle, info_texts["bundle"], "bundle-analysis")
+        plot_in_a_box("Customer Lifecycle Analysis", fig_lifecycle, info_texts["lifecycle"], "customer-lifecycle")
+        plot_in_a_box("Cohort & LTV Analysis", fig_cohort, info_texts["cohort"], "cohort-analysis")
         
-        # Row 5 (Full Width)
-        plot_in_a_box("Bundle Purchase Analysis", fig_bundle)
-        
-        # Row 6 (Full Width)
-        plot_in_a_box("Customer Lifecycle Analysis", fig_lifecycle)
-        
-        # Row 7 (Full Width)
-        plot_in_a_box("Cohort & LTV Analysis", fig_cohort)
-        
-        # Row 8
-        if fig_geo_demo or fig_prod_corr:
-            col5, col6 = st.columns(2)
-            with col5:
-                plot_in_a_box("Geographic & Demographic Insights", fig_geo_demo)
-            with col6:
-                plot_in_a_box("Product Purchase Correlation", fig_prod_corr)
+        col5, col6 = st.columns(2)
+        with col5:
+            plot_in_a_box("Geographic & Demographic Insights", fig_geo_demo, info_texts["geo_demo"], "geo-insights")
+        with col6:
+            plot_in_a_box("Product Purchase Correlation", fig_prod_corr, info_texts["prod_corr"], "product-correlation")
 
-        # Row 9 (Full Width)
-        plot_in_a_box("Revenue by Province & Age Group", fig_sunbursts)
+        plot_in_a_box("Revenue by Province & Age Group", fig_sunbursts, info_texts["sunbursts"], "revenue-breakdown")
 
+    elif tab == "Raw":
+        st.dataframe(df)
     else:
-        st.info(f"Visualizations for the '{tab}' tab can be added here.")
+        # Fallback for other tabs
+        st.header(f"{tab} Insights")
+        fig_kpis = plot_daily_kpis(df)
+        plot_in_a_box(f"Daily Revenue and Orders for {tab}", fig_kpis, "Standard daily KPIs.", "other-kpi")
 
 # ----------------------------------------
 # Initialize Application
@@ -1645,10 +1743,14 @@ else:
 # ----------------------------------------
 # Footer / Credits
 # ----------------------------------------
-st.markdown("""
----
-© 2025 | Crafted with care for clarity, empathy, and forward-looking insights.
-""")
+# 1. Use st.divider() to create a clean horizontal rule.
+st.divider()
+
+# 2. Use st.markdown for the text, with unsafe_allow_html=True for the link.
+st.markdown(
+    '© 2025 FREI. All Rights Reserved. | Support: <a href="mailto:chris@frei.co.za">chris@frei.co.za</a>',
+    unsafe_allow_html=True
+)
 
 # ----------------------------------------
 # Performance Tips (shown in sidebar)

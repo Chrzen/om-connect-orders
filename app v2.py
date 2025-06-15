@@ -290,9 +290,8 @@ def load_filtered_data(start_date, end_date, payment_types=None, limit=100000):
                               'order_item_retail_amount', 'order_item_provisioned_units',
                               'birth_year', 'customer_age', 'bundlesize']
         for col in numeric_to_convert:
-            if col in numeric_to_convert:
-                if col in df.columns:
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
 
         if 'birth_year' in df.columns:
             df['birth_year'] = df['birth_year'].dropna().astype(int)
@@ -389,6 +388,8 @@ def safe_plot_period_comparison(df_tab, start_date, end_date):
         st.error(f"Error creating period comparison chart: {e}")
         return None
 
+# ADD this to the '# Plotting Functions with Error Handling' section
+
 def safe_plot_product_treemap(df_tab):
     """Wrapper for product treemap plot with error handling"""
     try:
@@ -399,7 +400,7 @@ def safe_plot_product_treemap(df_tab):
     except Exception as e:
         st.error(f"Error creating product treemap: {e}")
         return None
-
+    
 def safe_plot_weekly_kpis(df_tab):
     """Wrapper for weekly KPI plot with error handling"""
     try:
@@ -438,7 +439,7 @@ def safe_plot_customer_lifecycle(df_tab):
     except Exception as e:
         st.error(f"Error creating customer lifecycle chart: {e}")
         return None
-
+    
 def safe_plot_cohort_analysis(df_tab):
     """Wrapper for the cohort analysis plot with error handling."""
     try:
@@ -476,7 +477,7 @@ def safe_plot_correlation_matrix(df_tab):
     except Exception as e:
         st.error(f"Error creating correlation matrix: {e}")
         return None
-
+    
 def safe_plot_product_correlation_matrix(df_tab):
     """Wrapper for the product correlation matrix with error handling."""
     try:
@@ -487,7 +488,7 @@ def safe_plot_product_correlation_matrix(df_tab):
     except Exception as e:
         st.error(f"Error creating product correlation matrix: {e}")
         return None
-
+    
 def safe_plot_split_sunbursts(df_tab):
     """Wrapper for the split sunburst charts with error handling."""
     try:
@@ -497,8 +498,8 @@ def safe_plot_split_sunbursts(df_tab):
         return plot_split_sunbursts(df_tab)
     except Exception as e:
         st.error(f"Error creating split sunburst charts: {e}")
-        return None
-
+        return None    
+    
 def safe_plot_purchase_sequence_sankey(df_tab):
     """Wrapper for the purchase sequence Sankey diagram with error handling."""
     try:
@@ -510,7 +511,7 @@ def safe_plot_purchase_sequence_sankey(df_tab):
     except Exception as e:
         st.error(f"Error creating purchase sequence Sankey diagram: {e}")
         return None
-
+    
 def safe_plot_repurchase_propensity(df_tab):
     """Wrapper for the repurchase propensity curve with error handling."""
     try:
@@ -522,7 +523,7 @@ def safe_plot_repurchase_propensity(df_tab):
     except Exception as e:
         st.error(f"Error creating repurchase propensity curve: {e}")
         return None
-
+    
 # ----------------------------------------
 # Plotly Visualization Functions
 # ----------------------------------------
@@ -573,7 +574,7 @@ def plot_repurchase_propensity(df):
         xaxis_title="Days Since Last Purchase",
         yaxis_title="Probability of Next Purchase Occurring",
         yaxis_tickformat='.0%',
-        height=500,  # Set standard height
+        height=600,
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
         font_color='white',
         legend=dict(title="Preceding Product")
@@ -656,6 +657,7 @@ def plot_purchase_sequence_sankey(df):
 
     return fig
 
+# REPLACE this function
 def plot_split_sunbursts(df):
     """
     Creates two side-by-side interactive sunburst charts for revenue analysis:
@@ -729,17 +731,16 @@ def plot_daily_kpis(df):
 
     # --- THEME UPDATE ---
     fig.update_layout(
+        title_text="Daily Revenue and Order Volume",
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        font_color='white',
-        height=450  # Set standard height
+        font_color='white'
     )
     fig.update_xaxes(title_text="Date", gridcolor='rgba(255, 255, 255, 0.2)')
     fig.update_yaxes(title_text="<b>Total Revenue (R)</b>", secondary_y=False, tickformat="$,.0f", gridcolor='rgba(255, 255, 255, 0.2)')
     fig.update_yaxes(title_text="<b>Order Count</b>", secondary_y=True, showgrid=False)
     return fig
-
 
 
 def plot_weekly_kpis(df):
@@ -822,6 +823,7 @@ def plot_weekly_kpis(df):
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         font_color='white',
+        title_text="Weekly Performance Dashboard (excluding latest partial week)",
         title_x=0.5,
         margin=dict(t=80, b=50, l=50, r=50)
     )
@@ -839,7 +841,7 @@ def plot_weekly_kpis(df):
 
 def plot_product_type_timeline(df):
     """
-    Creates a stacked bar chart of order volume by product type over time.
+    Creates a stacked area chart of order volume by product type over time.
     """
     df = df.copy()
     df['created_at'] = pd.to_datetime(df['created_at'])
@@ -847,25 +849,41 @@ def plot_product_type_timeline(df):
     daily_products = df.groupby([df['created_at'].dt.date, 'product_type_desc']).size().reset_index(name='count')
     daily_products.rename(columns={'created_at': 'date'}, inplace=True)
 
-    fig = px.bar(daily_products,
+    fig = px.area(daily_products,
                   x='date',
                   y='count',
                   color='product_type_desc',
+                  title="Daily Order Volume by Product Type",
                   labels={'date': 'Date', 'count': 'Number of Orders', 'product_type_desc': 'Product Type'},
+                  # --- CHANGE: Use the app's theme palette ---
                   color_discrete_sequence=oldmutual_palette)
 
     # --- THEME UPDATE ---
     fig.update_layout(
-        barmode='stack',
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         font_color='white',
-        legend_title_text='Product Type',
-        height=450  # Set standard height
+        legend_title_text='Product Type'
     )
     fig.update_xaxes(gridcolor='rgba(255, 255, 255, 0.2)')
     fig.update_yaxes(gridcolor='rgba(255, 255, 255, 0.2)')
     return fig
+
+def plot_in_a_box(title: str, fig):
+    """
+    A helper function to wrap a Plotly figure in a styled "tile" or "box".
+    """
+    if fig is None:
+        return # Don't display anything if the figure is None
+
+    st.markdown(f'<div class="plot-container">', unsafe_allow_html=True)
+    st.markdown(f"<h5>{title}</h5>", unsafe_allow_html=True)
+    
+    # --- CHANGE IS HERE ---
+    # We add a unique 'key' to prevent the DuplicateElementId error.
+    st.plotly_chart(fig, use_container_width=True, key=title)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def plot_growth_bars(df):
     """
@@ -921,7 +939,7 @@ def plot_growth_bars(df):
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         font_color='white',
-        height=500  # Set standard height
+        height=450
     )
     fig.update_yaxes(zeroline=True, zerolinewidth=1, zerolinecolor='grey', gridcolor='rgba(255, 255, 255, 0.2)')
     fig.update_xaxes(showgrid=False)
@@ -980,35 +998,28 @@ def plot_period_comparison_bars(df, current_start, current_end):
     fig.update_xaxes(showgrid=False)
     return fig
 
+# ADD this to the '# Plotly Visualization Functions' section
 
 def plot_bundle_analysis(df):
     """
     Creates a two-plot analysis of specific data, voice, and SMS bundles,
     showing distribution vs. revenue and weekly popularity.
     """
-    # 1. Filter for specific products and define a logical order
     product_order = [
-        # Data Bundles (by size)
         '30 MB', '50 MB', '100 MB', '500 MB', '1 GB', '2 GB', '3 GB', '5 GB', '10 GB (30 Days)', '20 GB (30 Days)',
-        # WhatsApp Bundles (by duration)
         'WhatsApp Daily', 'WhatsApp Weekly', 'WhatsApp Monthly',
-        # Voice Bundles (by duration)
         'Voice 30 Min', 'Voice 100 Min',
-        # SMS Bundles (by count)
         '30 SMS', '100 SMS', '500 SMS'
     ]
-
     df_bundles = df[df['product_name'].isin(product_order)].copy()
 
     if df_bundles.empty:
-        # If no relevant products are in the dataframe, don't create a plot
         st.info("No specific bundle products (e.g., '1 GB', '100 MB') found in the selected data.")
         return None
 
     df_bundles['product_name'] = pd.Categorical(df_bundles['product_name'], categories=product_order, ordered=True)
     df_bundles.sort_values('product_name', inplace=True)
 
-    # 2. Create the subplot figure (1 row, 2 columns)
     fig = make_subplots(
         rows=1, cols=2,
         specs=[[{"secondary_y": True}, {"secondary_y": False}]],
@@ -1016,51 +1027,44 @@ def plot_bundle_analysis(df):
     )
 
     # --- Plot 1: Bundle Orders vs. Revenue ---
-
-    # Aggregate data for the first plot
     bundle_summary = df_bundles.groupby('product_name', observed=True).agg(
         order_count=('id', 'count'),
         total_revenue=('retail_amount', 'sum')
     ).reset_index()
 
-    # Bar chart for order count
     fig.add_trace(go.Bar(
         x=bundle_summary['product_name'],
         y=bundle_summary['order_count'],
         name='Orders',
-        marker_color='#5AAA46',
-        hovertemplate='<b>%{x}</b><br>Orders: %{y:,}<extra></extra>'
+        marker_color=oldmutual_palette[3],
+        hovertemplate='<b>%{x}</b><br>Orders: %{y:,}<extra></extra>',
+        opacity=0.6
     ), secondary_y=False, row=1, col=1)
 
-    # Line chart for total revenue
     fig.add_trace(go.Scatter(
         x=bundle_summary['product_name'],
         y=bundle_summary['total_revenue'],
         name='Revenue',
-        line=dict(color='#8CC63F', width=3),
+        line=dict(color='#FFFFFF', width=3),
         hovertemplate='Revenue: R%{y:,.2f}<extra></extra>'
     ), secondary_y=True, row=1, col=1)
 
     # --- Plot 2: Weekly Bundle Popularity (Stacked Bar) ---
-
     df_bundles['created_at'] = pd.to_datetime(df_bundles['created_at'])
-
     weekly_counts = df_bundles.groupby([
         pd.Grouper(key='created_at', freq='W-SUN'),
         'product_name'
     ], observed=True).size().unstack(fill_value=0)
 
-
-    # Use a qualitative color scale for the many product categories
     colors = px.colors.qualitative.Vivid
-
     for i, product in enumerate(weekly_counts.columns):
         fig.add_trace(go.Bar(
             x=weekly_counts.index,
             y=weekly_counts[product],
             name=product,
             marker_color=colors[i % len(colors)],
-            hovertemplate=f'<b>{product}</b><br>Week of %{{x|%d %b}}<br>Orders: %{{y}}<extra></extra>'
+            hovertemplate=f'<b>{product}</b><br>Week of %{{x|%d %b}}<br>Orders: %{{y}}<extra></extra>',
+            opacity=0.8
         ), row=1, col=2)
 
     # --- Layout and Theming ---
@@ -1070,19 +1074,15 @@ def plot_bundle_analysis(df):
         paper_bgcolor='rgba(0,0,0,0)',
         font_color='white',
         legend_traceorder="normal",
-        barmode='stack',  # This is crucial for the second plot
+        barmode='stack',
         legend=dict(font=dict(size=10))
     )
 
-    # Style axes for Plot 1
     fig.update_yaxes(title_text="<b>Order Count</b>", secondary_y=False, row=1, col=1, gridcolor='rgba(255, 255, 255, 0.2)')
     fig.update_yaxes(title_text="<b>Total Revenue (R)</b>", secondary_y=True, row=1, col=1, showgrid=False)
     fig.update_xaxes(tickangle=45, row=1, col=1)
-
-    # Style axes for Plot 2
     fig.update_yaxes(title_text="<b>Weekly Orders</b>", row=1, col=2, gridcolor='rgba(255, 255, 255, 0.2)')
     fig.update_xaxes(title_text="<b>Week</b>", tickformat="%d %b %Y", row=1, col=2)
-
 
     return fig
 
@@ -1135,7 +1135,7 @@ def plot_customer_lifecycle(df):
 
     fig.add_trace(go.Scatter(
         x=stage_metrics.index, y=stage_metrics['orders_per_sim'], name='Orders per SIM',
-        line=dict(color="#8CC63F", width=3),  # Standardized line color
+        line=dict(color='#FFFFFF', width=3),
         hovertemplate='Orders per SIM: %{y:.2f}<extra></extra>'
     ), secondary_y=True, row=1, col=1)
 
@@ -1153,7 +1153,7 @@ def plot_customer_lifecycle(df):
         z=product_stage_cross.values,
         x=product_stage_cross.columns,
         y=product_stage_cross.index,
-        colorscale=[oldmutual_palette[0], oldmutual_palette[3]],  # Use palette for gradient
+        colorscale='Greens',
         hovertemplate='<b>Stage:</b> %{y}<br><b>Product:</b> %{x}<br><b>Preference:</b> %{z:.1%}<extra></extra>'
     ), row=1, col=2)
 
@@ -1196,18 +1196,28 @@ def plot_cohort_analysis(df):
     df = df.copy()
     df['created_at'] = pd.to_datetime(df['created_at'])
 
+    # --- CHANGE 1: Filter out the latest, incomplete week of data ---
     if not df.empty:
+        # Calculate the end date of the last full week (previous Sunday)
         last_full_week_end = df['created_at'].max().normalize() - pd.to_timedelta(df['created_at'].max().dayofweek + 1, unit='d')
         df = df[df['created_at'] <= last_full_week_end].copy()
 
+    # If filtering leaves no data, exit
     if df.empty:
         return None
+    # ------------------------------------------------------------------
 
+    # 1. Define weekly cohorts based on the first transaction date of each SIM
     df['acquisition_date'] = df.groupby('sim_msisdn')['created_at'].transform('min')
+
+    # The 'cohort_week' is the start of the week in which the SIM was acquired
     df['cohort_week'] = df['acquisition_date'].dt.to_period('W').apply(lambda p: p.start_time)
     df['activity_week'] = df['created_at'].dt.to_period('W').apply(lambda p: p.start_time)
+
+    # Calculate the age of the transaction in weeks
     df['cohort_week_num'] = (df['activity_week'] - df['cohort_week']).dt.days // 7
 
+    # --- Create the subplot figure (1 row, 2 columns) ---
     fig = make_subplots(
         rows=1, cols=2,
         subplot_titles=(
@@ -1216,32 +1226,40 @@ def plot_cohort_analysis(df):
         )
     )
 
+    # --- Plot 1: Cumulative Revenue by Cohort ---
     cohort_revenue = df.groupby(['cohort_week', 'cohort_week_num'])['retail_amount'].sum().unstack(fill_value=0)
     revenue_cumulative = cohort_revenue.cumsum(axis=1)
 
+    # Get top 5 cohorts by their final cumulative revenue
     if not revenue_cumulative.empty:
         top_5_cohorts = revenue_cumulative.iloc[:, -1].nlargest(5).index
+
+        # --- CHANGE 2: Create a color gradient from the theme palette ---
         num_colors = len(top_5_cohorts)
+        # Gradient from dark green to bright green
         colors = px.colors.sample_colorscale(
             [oldmutual_palette[0], oldmutual_palette[3]],
             [n / (num_colors - 1) for n in range(num_colors)] if num_colors > 1 else [0.5]
         )
+        # ---------------------------------------------------------------
 
         for i, cohort in enumerate(top_5_cohorts):
             cohort_data = revenue_cumulative.loc[cohort]
             fig.add_trace(go.Scatter(
                 x=cohort_data.index, y=cohort_data.values,
                 name=f"Cohort: {pd.to_datetime(cohort).strftime('%d %b %Y')}",
-                line=dict(color=colors[i]),
+                line=dict(color=colors[i]), # Use gradient color
                 mode='lines+markers',
                 hovertemplate='<b>Week %{x}</b><br>Revenue: R%{y:,.2f}<extra></extra>'
             ), row=1, col=1)
 
+    # --- Plot 2: Average Customer Value Growth Curve ---
     weekly_total_revenue = df.groupby('cohort_week_num')['retail_amount'].sum()
     total_sims = df['sim_msisdn'].nunique()
 
+    # Avoid division by zero if no SIMs are found
     if total_sims == 0:
-        return fig
+        return fig # Return the figure as is
 
     avg_cumulative_revenue = weekly_total_revenue.cumsum() / total_sims
 
@@ -1251,11 +1269,12 @@ def plot_cohort_analysis(df):
         hovertemplate='<b>Week %{x}</b><br>Avg Value: R%{y:,.2f}<extra></extra>'
     ), row=1, col=2)
 
+    # Add a trendline to project future value
     if len(avg_cumulative_revenue) > 4:
         def log_func(x, a, b, c):
             return a * np.log(b * x + 1) + c
         
-        x_data = avg_cumulative_revenue.index.values[1:]
+        x_data = avg_cumulative_revenue.index.values[1:] # Exclude week 0 for better fit
         y_data = avg_cumulative_revenue.values[1:]
 
         try:
@@ -1271,6 +1290,7 @@ def plot_cohort_analysis(df):
                 hovertemplate='Projected Week %{x}<br>Avg Value: R%{y:,.2f}<extra></extra>'
             ), row=1, col=2)
 
+            # Add annotation for 1-year projected value
             year_value = y_projection[-1]
             fig.add_annotation(
                 x=projection_weeks, y=year_value, text=f"Projected 1-Year LTV<br><b>R{year_value:,.2f}</b>",
@@ -1278,6 +1298,7 @@ def plot_cohort_analysis(df):
                 bgcolor="#006B54", bordercolor="white", borderwidth=1, row=1, col=2
             )
         except RuntimeError:
+            # If curve fitting fails, just show the observed data
             st.warning("Could not generate LTV projection for the selected date range.")
 
     # --- Layout and Theming ---
@@ -1285,13 +1306,15 @@ def plot_cohort_analysis(df):
         height=500,
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
         font_color='white',
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        margin=dict(t=100)  # Add top margin to prevent title/legend overlap
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
+    # Plot 1 axes
     fig.update_xaxes(title_text="Weeks Since Acquisition", row=1, col=1)
     fig.update_yaxes(title_text="Cumulative Revenue (R)", tickformat="$,.0f", row=1, col=1, gridcolor='rgba(255, 255, 255, 0.2)')
+    # Plot 2 axes
     fig.update_xaxes(title_text="Weeks Since Acquisition", row=1, col=2)
     fig.update_yaxes(title_text="Avg Cumulative Value per SIM (R)", tickformat="$,.0f", row=1, col=2, gridcolor='rgba(255, 255, 255, 0.2)')
+
 
     return fig
 
@@ -1324,7 +1347,7 @@ def plot_geo_demographic_overview(df):
 
     fig.add_trace(go.Scatter(
         x=province_metrics.index, y=province_metrics['orders_per_sim'],
-        name='Orders per SIM', line=dict(color="#8CC63F", width=3),  # Standardized line color
+        name='Orders per SIM', line=dict(color='#FFFFFF', width=3),
         hovertemplate='Orders per SIM: %{y:.2f}<extra></extra>'
     ), secondary_y=True, row=1, col=1)
 
@@ -1345,13 +1368,13 @@ def plot_geo_demographic_overview(df):
 
     fig.add_trace(go.Scatter(
         x=age_metrics.index, y=age_metrics['orders_per_sim'],
-        name='Orders per SIM', line=dict(color="#8CC63F", width=3),  # Standardized line color
+        name='Orders per SIM', line=dict(color='#FFFFFF', width=3),
         hovertemplate='Orders per SIM: %{y:.2f}<extra></extra>'
     ), secondary_y=True, row=1, col=2)
 
     # --- Layout and Theming ---
     fig.update_layout(
-        height=500, showlegend=False,  # Set standard height
+        height=450, showlegend=False,
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
         font_color='white'
     )
@@ -1403,7 +1426,7 @@ def plot_hierarchical_sunburst(df):
 
     # For the sunburst, we need to handle potential missing values gracefully
     df_filtered = df_filtered[['province', 'age_group', 'product_name', 'retail_amount']].dropna()
-
+    
     # Create a simpler product category for better visualization
     df_filtered['product_category'] = df_filtered['product_name'].apply(
         lambda x: 'Airtime' if 'airtime' in x.lower() else ('Data' if any(s in x for s in ['MB', 'GB']) else 'Other')
@@ -1467,24 +1490,6 @@ def plot_product_correlation_matrix(df):
     return fig
 
 # ----------------------------------------
-# Helper function for layout
-# ----------------------------------------
-def plot_in_a_box(title: str, fig):
-    """
-    A helper function to wrap a Plotly figure in a styled "tile" or "box".
-    """
-    if fig is None:
-        return # Don't display anything if the figure is None
-
-    st.markdown(f'<div class="plot-container">', unsafe_allow_html=True)
-    st.markdown(f"<h5>{title}</h5>", unsafe_allow_html=True)
-    
-    # We add a unique 'key' to prevent the DuplicateElementId error.
-    st.plotly_chart(fig, use_container_width=True, key=title)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ----------------------------------------
 # Function to display content for a single tab
 # ----------------------------------------
 def display_dashboard_content(tab, start_date, end_date):
@@ -1524,67 +1529,36 @@ def display_dashboard_content(tab, start_date, end_date):
         st.info(f"No {tab} data found for the selected date range.")
         return
 
+    # This is the correct and only plotting logic needed.
     if tab == "Standard Payments":
-        # --- Pre-generate all figures to avoid rendering empty tiles ---
-        fig_kpis = safe_plot_daily_kpis(main_period_df)
-        fig_prod_type = safe_plot_product_timeline(main_period_df)
-        fig_weekly_kpis = safe_plot_weekly_kpis(main_period_df)
-        fig_propensity = safe_plot_repurchase_propensity(main_period_df)
-        fig_growth = safe_plot_growth_bars(main_period_df)
-        fig_sankey = safe_plot_purchase_sequence_sankey(main_period_df)
-        fig_bundle = safe_plot_bundle_analysis(main_period_df)
-        fig_lifecycle = safe_plot_customer_lifecycle(main_period_df)
-        fig_cohort = safe_plot_cohort_analysis(main_period_df)
-        fig_geo_demo = safe_plot_geo_demographic_overview(main_period_df)
-        fig_prod_corr = safe_plot_product_correlation_matrix(main_period_df)
-        fig_sunbursts = safe_plot_split_sunbursts(main_period_df)
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            plot_in_a_box("Daily KPIs", safe_plot_daily_kpis(main_period_df))
+        with col2:
+            plot_in_a_box("Order Volume by Product Type", safe_plot_product_timeline(main_period_df))
 
-        # --- Render Layout ---
+        plot_in_a_box("Weekly Performance", safe_plot_weekly_kpis(main_period_df))
+        plot_in_a_box("Repurchase Propensity Analysis", safe_plot_repurchase_propensity(main_period_df))
+        plot_in_a_box("Customer Purchase Journey (Sankey Diagram)", safe_plot_purchase_sequence_sankey(main_period_df))
+        plot_in_a_box("Bundle Purchase Analysis", safe_plot_bundle_analysis(main_period_df))
+        plot_in_a_box("Customer Lifecycle Analysis", safe_plot_customer_lifecycle(main_period_df))
+        plot_in_a_box("Cohort & LTV Analysis", safe_plot_cohort_analysis(main_period_df))
         
-        # Row 1
-        if fig_kpis or fig_prod_type:
-            col1, col2 = st.columns(2)
-            with col1:
-                plot_in_a_box("Daily Revenue and Order Volume", fig_kpis)
-            with col2:
-                plot_in_a_box("Order Volume by Product Type", fig_prod_type)
+        plot_in_a_box("Geographic & Demographic Insights", safe_plot_geo_demographic_overview(main_period_df))
+        plot_in_a_box("Revenue by Province & Age Group", safe_plot_split_sunbursts(main_period_df))
 
-        # Row 2 (Full Width)
-        plot_in_a_box("Weekly Performance", fig_weekly_kpis)
-        
-        # Row 3
-        if fig_propensity or fig_growth:
-            col3, col4 = st.columns(2)
-            with col3:
-                plot_in_a_box("Repurchase Propensity Analysis", fig_propensity)
-            with col4:
-                plot_in_a_box("Recent Growth (WoW & MoM)", fig_growth)
-
-        # Row 4 (Full Width)
-        plot_in_a_box("Customer Purchase Journey (Sankey Diagram)", fig_sankey)
-        
-        # Row 5 (Full Width)
-        plot_in_a_box("Bundle Purchase Analysis", fig_bundle)
-        
-        # Row 6 (Full Width)
-        plot_in_a_box("Customer Lifecycle Analysis", fig_lifecycle)
-        
-        # Row 7 (Full Width)
-        plot_in_a_box("Cohort & LTV Analysis", fig_cohort)
-        
-        # Row 8
-        if fig_geo_demo or fig_prod_corr:
-            col5, col6 = st.columns(2)
-            with col5:
-                plot_in_a_box("Geographic & Demographic Insights", fig_geo_demo)
-            with col6:
-                plot_in_a_box("Product Purchase Correlation", fig_prod_corr)
-
-        # Row 9 (Full Width)
-        plot_in_a_box("Revenue by Province & Age Group", fig_sunbursts)
+        col_growth, col_prod_corr = st.columns(2)
+        with col_growth:
+            plot_in_a_box("Recent Growth (WoW & MoM)", safe_plot_growth_bars(main_period_df))
+        with col_prod_corr:
+            plot_in_a_box("Product Purchase Correlation", safe_plot_product_correlation_matrix(main_period_df))
 
     else:
         st.info(f"Visualizations for the '{tab}' tab can be added here.")
+
+#
+# REPLACE this function with the updated version below.
+#
 
 # ----------------------------------------
 # Initialize Application
@@ -1632,13 +1606,9 @@ tabs = st.tabs(tab_names)
 
 
 if start_date and end_date:
-    # A simple check to ensure we have a valid date range.
-    if start_date > end_date:
-        st.error("Error: The start date cannot be after the end date. Please select a valid range.")
-    else:
-        for i, tab_name in enumerate(tab_names):
-            with tabs[i]:
-                display_dashboard_content(tab_name, start_date, end_date)
+    for i, tab_name in enumerate(tab_names):
+        with tabs[i]:
+            display_dashboard_content(tab_name, start_date, end_date)
 else:
     st.info("Select a date range in the sidebar to load and display data.")
 

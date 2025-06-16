@@ -7,6 +7,7 @@ import numpy as np
 import json
 import datetime
 from scipy import optimize
+import textwrap
 
 TABLE_NAME = "APP_SCHEMA.ORDER_DATA_10062025"
 
@@ -142,11 +143,11 @@ st.markdown("""
     .info-icon .tooltip-text {
         visibility: hidden;
         width: 350px;
-        background-color: #262730;
+        background-color: rgba(38, 39, 48, 0.9);
         color: #fff;
         text-align: left;
         font-style: normal;
-        font-size: 14px;
+        font-size: 15px;
         font-weight: normal;
         border-radius: 6px;
         padding: 10px;
@@ -1575,19 +1576,199 @@ def plot_in_a_box(title: str, fig, info_text: str, anchor_id: str):
 # Function to display content for a single tab
 # ----------------------------------------
 # Info text definitions
+# Info text definitions for executive-level understanding
+# Info text definitions for executive-level understanding
+# Info text definitions with final spacing adjustments
 info_texts = {
-    "kpis": "This chart shows daily total revenue (green line, left axis) and number of orders (green bars, right axis). It helps to spot daily trends and see how sales volume and revenue correlate.",
-    "prod_type": "This stacked bar chart displays the daily number of orders, broken down by product type. Each color represents a different product type, allowing you to see which product categories are most popular each day.",
-    "weekly_kpis": "This dashboard presents a weekly overview of key performance indicators (KPIs). The top row shows absolute weekly numbers for orders, revenue, and unique customers. The bottom row displays the week-over-week growth rate for each KPI.",
-    "propensity": "This chart shows how quickly customers make another purchase after buying a specific top-selling product. A steeper curve means customers repurchase faster. For example, a point at (30, 60%) means 60% of customers who bought that product made their next purchase within 30 days.",
-    "growth": "These bars show the week-over-week (WoW) and month-over-month (MoM) growth for revenue and orders, based on the most recent data in the selected range. It's a quick way to assess recent performance momentum.",
-    "sankey": "This Sankey diagram illustrates the flow of customers between their first four product purchases. The width of the flow represents the number of customers. This helps to understand common purchase paths and which products lead to follow-up sales.",
-    "bundle": "The left chart compares order counts (bars) with revenue (line) for specific product bundles to identify popularity vs profitability. The right chart shows the weekly popularity of these bundles as a stacked bar chart, revealing trends over time.",
-    "lifecycle": "This analyzes customer behavior based on how long it has been since their first purchase. It shows average order value, purchase frequency, top product preferences at each stage, and the cumulative revenue generated over their tenure.",
-    "cohort": "This provides a cohort analysis based on customer acquisition week. The left plot shows cumulative revenue for the top 5 weekly cohorts. The right plot shows average cumulative revenue per customer, with a projection of the 1-year Lifetime Value (LTV) based on the trend.",
-    "geo_demo": "These charts break down revenue and customer engagement by location and age group. Bar charts show total revenue, while line charts show the average number of orders per SIM. This helps identify key customer segments and regions.",
-    "prod_corr": "This heatmap shows the correlation between purchases of the top 12 products. A value closer to 1.0 (darker green) indicates that customers who buy one product are more likely to also buy the other, revealing cross-selling opportunities.",
-    "sunbursts": "These sunburst charts provide a hierarchical view of revenue. The left chart breaks down revenue by province, then product category. The right chart breaks it down by age group, then product category. Click on segments to drill down."
+    "kpis": textwrap.dedent("""
+
+        **What it shows:**
+
+        A daily snapshot of our sales performance.
+
+        - **Green Line:** The total revenue earned each day.
+
+        - **Green Bars:** The total number of orders processed each day.
+
+        **Business Question:**
+
+        Are our daily sales efforts translating into both more orders and higher revenue? This helps us spot weekly trends (e.g., are weekends stronger than weekdays?).
+        """),
+
+    "prod_type": textwrap.dedent("""
+
+        **What it shows:**
+
+        A breakdown of our daily orders by the type of product sold (e.g., 'Bundle', 'Airtime').
+
+        **How to read it:**
+
+        The total height of the bar represents all orders for that day. The size of each colored section shows which product categories were the most popular.
+
+        **Business Question:**
+
+        Which of our product categories are driving sales volume? Is the mix of products our customers are buying changing over time?
+        """),
+
+    "weekly_kpis": textwrap.dedent("""
+
+        **What it shows:**
+
+        A high-level weekly report card for our key business metrics.
+
+        **How to read it:**
+
+        - **Top Row:** Shows the absolute total for **Orders**, **Revenue**, and **Unique Customers** each week.
+
+        - **Bottom Row:** Shows the **Week-over-Week Growth**. Green means growth compared to the prior week; red indicates a decline.
+
+        **Business Question:**
+
+        Are we growing consistently week by week? This is a key indicator of our business's health and momentum.
+        """),
+
+    "propensity": textwrap.dedent("""
+
+        **What it shows:**
+
+        This reveals how quickly customers come back to make another purchase after buying a specific product. Each line represents a top-selling product.
+
+        **How to read it:**
+
+        A line that rises sharply means customers repurchase very quickly. For example, if the '1GB Data' line hits 50% at the 15-day mark, it means half of the customers who bought 1GB of data made their next purchase within 15 days.
+
+        **Business Question:**
+
+        Which products are best at creating loyal, repeat customers? This can inform our marketing and retention strategies.
+        """),
+
+    "growth": textwrap.dedent("""
+
+        **What it shows:**
+
+        A simple bar chart measuring our recent performance momentum.
+
+        **How to read it:**
+
+        It compares the last 7 days to the 7 days prior (Week-over-Week), and the last 30 days to the 30 days prior (Month-over-Month).
+
+        **Business Question:**
+
+        Are we currently in a growth or decline phase? This is our short-term health check.
+        """),
+
+    "sankey": textwrap.dedent("""
+
+        **What it shows:**
+
+        This visualizes the most common paths customers take through their first four purchases. The wider the path, the more customers followed that route.
+
+        **How to read it:**
+
+        Follow the paths from left to right to see what a customer who first bought 'Product A' is most likely to buy second, third, and so on.
+
+        **Business Question:**
+
+        Is there a 'golden path' of purchases that leads to high-value customers? What products are key gateways to encourage further spending?
+        """),
+
+    "bundle": textwrap.dedent("""
+
+        **What it shows:**
+
+        A deep-dive analysis of our specific product bundles.
+
+        **How to read it:**
+
+        - **Left Chart:** Compares how many times a bundle is sold (bars) versus how much revenue it generates (line).
+
+        - **Right Chart:** Shows which bundles are most popular each week.
+
+        **Business Question:**
+
+        Which bundles are our workhorses (high volume) versus our racehorses (high revenue)? Are there popular but low-revenue bundles we could optimize?
+        """),
+
+    "lifecycle": textwrap.dedent("""
+
+        **What it shows:**
+
+        How a customer's value and behavior changes over their lifetime with us, from their first week to over a year.
+
+        **How to read it:**
+
+        It tracks key metrics like average spend per order and purchase frequency as customers become more tenured. The heatmap shows which products are most popular at each stage of their journey.
+
+        **Business Question:**
+
+        Are we successfully increasing the value of our customers over time? Do we need different marketing strategies for new versus loyal customers?
+        """),
+
+    "cohort": textwrap.dedent("""
+
+        **What it shows:**
+
+        This groups customers by the week they made their first purchase (a 'cohort') and tracks their total spending over time.
+
+        **How to read it:**
+
+        - **Left Chart:** Tracks the cumulative revenue from our top-performing weekly cohorts.
+
+        - **Right Chart:** Shows the average spending per customer and uses this trend to **project their 1-Year Lifetime Value (LTV)**.
+
+        **Business Question:**
+
+        How much is a new customer acquired today likely to be worth to us over the next year? This is crucial for budgeting marketing spend and forecasting future revenue.
+        """),
+
+    "geo_demo": textwrap.dedent("""
+
+        **What it shows:**
+
+        A breakdown of our performance by customer location (Province) and Age Group.
+
+        **How to read it:**
+
+        - **Bars:** Show which segments generate the most **Total Revenue**.
+
+        - **Line:** Shows which segments are most engaged, measured by **Average Orders per Customer**.
+
+        **Business Question:**
+
+        Where are our most valuable customers located, and which age groups should we focus on? This helps target marketing efforts effectively.
+        """),
+
+    "prod_corr": textwrap.dedent("""
+
+        **What it shows:**
+
+        This heatmap reveals which products are most frequently bought together by the same customer.
+
+        **How to read it:**
+
+        The darker the square, the stronger the connection. A dark square where 'Product A' and 'Product B' intersect means customers who buy 'A' are very likely to also buy 'B'.
+
+        **Business Question:**
+
+        What are our best cross-selling or bundling opportunities? For example, if many people who buy 'Voice Minutes' also buy 'WhatsApp Bundles', we can promote them as a package.
+        """),
+
+    "sunbursts": textwrap.dedent("""
+
+        **What it shows:**
+
+        An interactive, hierarchical view of our revenue streams. You can click on segments to drill down.
+
+        **How to read it:**
+
+        - **Left Chart:** Starts with Province, then breaks down into Product Category.
+
+        - **Right Chart:** Starts with Age Group, then breaks down into Product Category.
+
+        **Business Question:**
+
+        Who are our most profitable customer segments and what, specifically, are they buying? (e.g., "How much revenue from Millennials in Gauteng comes from Data vs. Airtime?")
+        """)
 }
 
 def display_dashboard_content(tab, start_date, end_date):

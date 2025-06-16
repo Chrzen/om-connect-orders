@@ -253,6 +253,14 @@ def plot_purchase_sequence_sankey(df):
     Creates a Sankey diagram to visualize the sequence of product purchases
     for the first 4 purchases.
     """
+    def hex_to_rgba(hex_color, alpha=0.6):
+        """Convert hex color to rgba with transparency"""
+        hex_color = hex_color.lstrip('#')
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+        return f'rgba({r},{g},{b},{alpha})'
+    
     df = df.sort_values(['sim_msisdn', 'created_at']).copy()
 
     df['purchase_rank'] = df.groupby('sim_msisdn').cumcount() + 1
@@ -275,16 +283,36 @@ def plot_purchase_sequence_sankey(df):
     all_nodes = pd.unique(links[['source_label', 'target_label']].values.ravel('K'))
     node_map = {node: i for i, node in enumerate(all_nodes)}
 
+    link_colors = []
+    for src in links['source_label']:
+        if '(1st)' in src:
+            link_colors.append(hex_to_rgba(oldmutual_palette[1], 0.6))
+        elif '(2nd)' in src:
+            link_colors.append(hex_to_rgba(oldmutual_palette[2], 0.6))
+        elif '(3rd)' in src:
+            link_colors.append(hex_to_rgba(oldmutual_palette[3], 0.6))
+        else:
+            link_colors.append(hex_to_rgba(oldmutual_palette[4], 0.6))
+
     link_data = dict(
         source=[node_map[src] for src in links['source_label']],
         target=[node_map[tgt] for tgt in links['target_label']],
         value=links['value'],
-        color=[oldmutual_palette[s % len(oldmutual_palette)] for s in [node_map[src] for src in links['source_label']]]
+        color=link_colors
     )
+
+    # Change: Use darker node colors
+    node_colors = []
+    dark_palette = [oldmutual_palette[0], oldmutual_palette[2]]
+    for i, node in enumerate(all_nodes):
+        node_colors.append(dark_palette[i % len(dark_palette)])
+
     node_data = dict(
         label=all_nodes,
         pad=15,
-        thickness=20
+        thickness=20,
+        color=node_colors,  # Using the new darker palette
+        line=dict(color="white", width=1)
     )
 
     fig = go.Figure(go.Sankey(
@@ -297,7 +325,8 @@ def plot_purchase_sequence_sankey(df):
         title_text="Customer Purchase Journey: Which Product Comes Next?",
         font_size=12,
         height=700,
-        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
         font_color='white'
     )
 
@@ -314,23 +343,32 @@ def plot_split_sunbursts(df):
         lambda x: 'Airtime' if 'airtime' in x.lower() else ('Data' if any(s in x for s in ['MB', 'GB']) else 'Other')
     )
 
+    # CORRECTED: Explicitly map categories to the desired palette colors
+    color_map = {
+        'Data': oldmutual_palette[1],
+        'Airtime': oldmutual_palette[2],
+        'Other': oldmutual_palette[4]
+    }
+
     fig = make_subplots(
         rows=1, cols=2,
         specs=[[{'type': 'domain'}, {'type': 'domain'}]],
         subplot_titles=("Revenue by Province", "Revenue by Age Group")
     )
 
+    # Subplot 1: By Province
     px_fig_province = px.sunburst(
         df_filtered, path=['province', 'product_category'], values='retail_amount',
         color="product_category",
-        color_discrete_sequence=oldmutual_palette
+        color_discrete_map=color_map # Use the explicit map
     )
     fig.add_trace(px_fig_province.data[0], row=1, col=1)
 
+    # Subplot 2: By Age
     px_fig_age = px.sunburst(
         df_filtered, path=['age_group', 'product_category'], values='retail_amount',
         color="product_category",
-        color_discrete_sequence=oldmutual_palette
+        color_discrete_map=color_map # Use the explicit map
     )
     fig.add_trace(px_fig_age.data[0], row=1, col=2)
 
@@ -345,10 +383,6 @@ def plot_split_sunbursts(df):
     )
 
     return fig
-
-# utils/plotting.py
-
-# utils/plotting.py
 
 def plot_daily_kpis(df):
     """
@@ -369,7 +403,6 @@ def plot_daily_kpis(df):
     # CHANGE: Split into two separate plots
     fig = make_subplots(
         rows=2, cols=1,
-        subplot_titles=("Daily Revenue", "7-Day Rolling Average Growth"),
         vertical_spacing=0.15
     )
 
@@ -396,7 +429,7 @@ def plot_daily_kpis(df):
         showlegend=False
     )
     
-    fig.update_xaxes(title_text="Date", gridcolor='rgba(255, 255, 255, 0.2)')
+    fig.update_xaxes(title_text="", gridcolor='rgba(255, 255, 255, 0.2)')
     fig.update_yaxes(title_text="<b>Daily Revenue (R)</b>", row=1, col=1, tickformat="$,.0f", gridcolor='rgba(255, 255, 255, 0.2)')
     fig.update_yaxes(title_text="<b>7-Day Avg. Growth (%)</b>", row=2, col=1, gridcolor='rgba(255, 255, 255, 0.2)', ticksuffix="%")
     
@@ -516,7 +549,6 @@ def plot_product_type_timeline(df):
     # CHANGE: Split into two separate plots
     fig = make_subplots(
         rows=2, cols=1,
-        subplot_titles=("Daily Order Volume by Product Type", "7-Day Rolling Average Growth"),
         vertical_spacing=0.15
     )
     
@@ -723,11 +755,12 @@ def plot_bundle_analysis(df):
         total_revenue=('retail_amount', 'sum')
     ).reset_index()
 
+    # Change 1: Bar color for Bundle Orders
     fig.add_trace(go.Bar(
         x=bundle_summary['product_name'],
         y=bundle_summary['order_count'],
         name='Orders',
-        marker_color='#5AAA46',
+        marker_color=oldmutual_palette[1], # Changed color
         hovertemplate='<b>%{x}</b><br>Orders: %{y:,}<extra></extra>'
     ), secondary_y=False, row=1, col=1)
 
@@ -746,8 +779,8 @@ def plot_bundle_analysis(df):
         'product_name'
     ], observed=True).size().unstack(fill_value=0)
 
-    colors = px.colors.qualitative.Vivid
-
+    # Change 2: Darker color palette for weekly popularity
+    colors = oldmutual_palette
     for i, product in enumerate(weekly_counts.columns):
         fig.add_trace(go.Bar(
             x=weekly_counts.index,
@@ -903,18 +936,15 @@ def plot_cohort_analysis(df):
 
     if not revenue_cumulative.empty:
         top_5_cohorts = revenue_cumulative.iloc[:, -1].nlargest(5).index
-        num_colors = len(top_5_cohorts)
-        colors = px.colors.sample_colorscale(
-            [oldmutual_palette[0], oldmutual_palette[3]],
-            [n / (num_colors - 1) for n in range(num_colors)] if num_colors > 1 else [0.5]
-        )
+        # CHANGE: Use darker colors for cohort lines
+        colors = [oldmutual_palette[0], oldmutual_palette[1], oldmutual_palette[2], oldmutual_palette[4], '#00A09A'] # Using a slightly different color for the 5th to ensure visibility
 
         for i, cohort in enumerate(top_5_cohorts):
             cohort_data = revenue_cumulative.loc[cohort]
             fig.add_trace(go.Scatter(
                 x=cohort_data.index, y=cohort_data.values,
                 name=f"Cohort: {pd.to_datetime(cohort).strftime('%d %b %Y')}",
-                line=dict(color=colors[i]),
+                line=dict(color=colors[i % len(colors)]),
                 mode='lines+markers',
                 hovertemplate='<b>Week %{x}</b><br>Revenue: R%{y:,.2f}<extra></extra>'
             ), row=1, col=1)
@@ -975,8 +1005,6 @@ def plot_cohort_analysis(df):
     fig.update_yaxes(title_text="Avg Cumulative Value per SIM (R)", tickformat="$,.0f", row=1, col=2, gridcolor='rgba(255, 255, 255, 0.2)')
 
     return fig
-
-# utils/plotting.py
 
 def plot_geo_demographic_overview(df):
     """
@@ -1051,35 +1079,39 @@ def plot_geo_demographic_overview(df):
     
     return fig
 
-def plot_correlation_matrix(df):
+def plot_product_correlation_matrix(df):
     """
-    Calculates and displays a correlation matrix for key numeric features.
+    Calculates and displays a correlation matrix showing which products are
+    often purchased by the same customers.
     """
-    numeric_df = df[['retail_amount', 'customer_age', 'order_item_retail_amount']].copy()
-    numeric_df.rename(columns={
-        'retail_amount': 'Order Value',
-        'customer_age': 'Customer Age',
-        'order_item_retail_amount': 'Order Item Value'
-    }, inplace=True)
+    top_12_products = df['product_name'].value_counts().nlargest(12).index
+    df_top_products = df[df['product_name'].isin(top_12_products)]
 
-    correlation_matrix = numeric_df.corr()
+    purchase_matrix = pd.crosstab(df_top_products['sim_msisdn'], df_top_products['product_name'])
+    purchase_matrix_binary = (purchase_matrix > 0).astype(int)
 
+    product_correlation = purchase_matrix_binary.corr()
+
+    # CORRECTED: Use a custom diverging colorscale with the oldmutual_palette
     fig = go.Figure(go.Heatmap(
-        z=correlation_matrix.values,
-        x=correlation_matrix.columns,
-        y=correlation_matrix.columns,
-        colorscale=[[0.0, "#5AAA46"], [1.0, "#006B54"]],
-        text=correlation_matrix.round(2).values,
+        z=product_correlation.values,
+        x=product_correlation.columns,
+        y=product_correlation.columns,
+        colorscale=[[0.0, negative_color], [0.5, "#e6e6e6"], [1.0, oldmutual_palette[0]]],
+        zmid=0, # Center the colorscale on zero
+        text=product_correlation.round(2).values,
         texttemplate="%{text}",
         hovertemplate='<b>%{x}</b> vs <b>%{y}</b><br>Correlation: %{z:.2f}<extra></extra>'
     ))
 
     fig.update_layout(
-        title_text='Correlation Matrix of Numeric Features',
+        title_text='Product Purchase Correlation (Top 12 Products)',
         height=500,
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        font_color='white'
+        font_color='white',
+        xaxis_showgrid=False, yaxis_showgrid=False
     )
+    fig.update_xaxes(tickangle=30)
     return fig
 
 def plot_hierarchical_sunburst(df):
@@ -1127,11 +1159,13 @@ def plot_product_correlation_matrix(df):
 
     product_correlation = purchase_matrix_binary.corr()
 
+    # CORRECTED: Use a custom diverging colorscale with the oldmutual_palette
     fig = go.Figure(go.Heatmap(
         z=product_correlation.values,
         x=product_correlation.columns,
         y=product_correlation.columns,
-        colorscale='Greens',
+        colorscale=[[0.0, negative_color], [0.5, "#e6e6e6"], [1.0, oldmutual_palette[0]]],
+        zmid=0, # Center the colorscale on zero
         text=product_correlation.round(2).values,
         texttemplate="%{text}",
         hovertemplate='<b>%{x}</b> vs <b>%{y}</b><br>Correlation: %{z:.2f}<extra></extra>'

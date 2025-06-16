@@ -3,15 +3,46 @@ import textwrap
 
 TABLE_NAME = "APP_SCHEMA.ORDER_DATA_10062025"
 
+# Default Plotly hover styling
+DEFAULT_HOVER_STYLE = dict(
+    bgcolor="rgba(0, 82, 76, 0.95)",
+    bordercolor="#8CC63F",
+    font_color="white",
+    font_size=14,
+    font_family="sans serif"
+)
+
+# Default Plotly layout configuration
+DEFAULT_PLOTLY_LAYOUT = dict(
+    plot_bgcolor='rgba(0,0,0,0)',
+    paper_bgcolor='rgba(0,0,0,0)',
+    font_color='white',
+    hoverlabel=DEFAULT_HOVER_STYLE
+)
+
+# Helper function to apply consistent styling
+def apply_old_mutual_styling(fig):
+    """Apply Old Mutual styling to any Plotly figure"""
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font_color='white',
+        hoverlabel=DEFAULT_HOVER_STYLE
+    )
+    fig.update_xaxes(gridcolor='rgba(255, 255, 255, 0.2)')
+    fig.update_yaxes(gridcolor='rgba(255, 255, 255, 0.2)')
+    return fig
+
 oldmutual_palette = [
-    "#00524C", "#006B54", "#1A8754", "#5AAA46",
-    "#8CC63F", "#E6F2E2"
+    "#006B54", "#1A8754", "#5AAA46", 
+    "#8CC63F", "#00524C", "#E6F2E2"
 ]
 negative_color = "#d65f5f"
 
 # Info text definitions with the latest updates
 info_texts = {
     "kpis": textwrap.dedent("""
+                            
         **What it shows:**
 
         A daily view of our revenue performance and its underlying trend.
@@ -26,6 +57,7 @@ info_texts = {
         """),
 
     "prod_type": textwrap.dedent("""
+                                 
         **What it shows:**
 
         A breakdown of our daily order volume and its growth trend.
@@ -40,6 +72,7 @@ info_texts = {
         """),
 
     "weekly_kpis": textwrap.dedent("""
+
         **What it shows:**
 
         A high-level weekly report card for our key business metrics.
@@ -55,6 +88,7 @@ info_texts = {
         """),
 
     "propensity": textwrap.dedent("""
+
         **What it shows:**
 
         This reveals how quickly customers come back to make another purchase after buying a specific product. Each line represents a top-selling product.
@@ -69,6 +103,7 @@ info_texts = {
         """),
 
     "growth": textwrap.dedent("""
+
         **What it shows:**
 
         A simple bar chart measuring our recent performance momentum.
@@ -83,6 +118,7 @@ info_texts = {
         """),
 
     "sankey": textwrap.dedent("""
+
         **What it shows:**
 
         This visualizes the most common paths customers take through their first four purchases. The wider the path, the more customers followed that route.
@@ -97,6 +133,7 @@ info_texts = {
         """),
 
     "bundle": textwrap.dedent("""
+
         **What it shows:**
 
         A deep-dive analysis of our specific product bundles.
@@ -112,6 +149,7 @@ info_texts = {
         """),
 
     "lifecycle": textwrap.dedent("""
+
         **What it shows:**
 
         How a customer's value and behavior changes over their lifetime with us, from their first week to over a year.
@@ -126,6 +164,7 @@ info_texts = {
         """),
 
     "cohort": textwrap.dedent("""
+
         **What it shows:**
 
         This groups customers by the week they made their first purchase (a 'cohort') and tracks their total spending over time.
@@ -141,6 +180,7 @@ info_texts = {
         """),
 
     "geo_demo": textwrap.dedent("""
+
         **What it shows:**
 
         A breakdown of our performance by customer location (Province) and Age Group.
@@ -156,6 +196,7 @@ info_texts = {
         """),
 
     "prod_corr": textwrap.dedent("""
+
         **What it shows:**
 
         This heatmap reveals which products are most frequently bought together by the same customer.
@@ -170,6 +211,7 @@ info_texts = {
         """),
 
     "sunbursts": textwrap.dedent("""
+
         **What it shows:**
 
         An interactive, hierarchical view of our revenue streams. You can click on segments to drill down.
@@ -197,18 +239,10 @@ styling = """
     background-size: auto;
 }
 
-
-    /* 2. PLOT CONTAINER (THE TILE) - Now with more transparency */
-    /* This now excludes the main tab container by checking that it doesn't contain a header (h2) */
+    /* 2. PLOT CONTAINER (THE TILE) - Spacing only, no visual styling */
     div[data-testid="stVerticalBlock"]:has(h5):has(.stPlotlyChart):not(:has(h2)) {
-        padding: 1rem 1.5rem 1.5rem 1.5rem;
-        border-radius: 15px;
-        /* The original background-color was rgba(14, 17, 23, 0.85). We reduce the last value (alpha) to increase transparency */
-        background-color: rgba(14, 17, 23, 0.7); 
-        border: 1px solid #00524C;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-        backdrop-filter: blur(8px);
         margin-bottom: 1.5rem;
+        /* Removed: padding, border-radius, background-color, border, box-shadow, backdrop-filter */
     }
 
     /* 3. RESET PLOTLY CHART STYLING */
@@ -222,6 +256,20 @@ styling = """
         backdrop-filter: none !important;
     }
 
+    /* 4. FIX PLOTLY HOVER TEXT STYLING */
+    .hoverlayer .hovertext {
+        background-color: rgba(0, 82, 76, 0.95) !important;
+        color: #FFFFFF !important;
+        border: 1px solid #8CC63F !important;
+        border-radius: 6px !important;
+        font-size: 14px !important;
+    }
+
+    .hoverlayer .hovertext path {
+        fill: rgba(0, 82, 76, 0.95) !important;
+        stroke: #8CC63F !important;
+    }
+
     /* Style the title (h5) inside our plot container */
     .plot-container h5 {
         padding-bottom: 10px;
@@ -229,30 +277,7 @@ styling = """
         color: #a0a0a0;
     }
 
-    /* --- 4. CONSOLIDATED MODERN TAB DESIGN --- */
-
-    /* Makes the tab bar 'stick' to the top when scrolling */
-    div[data-testid="stTabs"] > div[role="tablist"] {
-        position: sticky !important;
-        top: 3.2rem; /* Adjust this value if it overlaps with a header */
-        z-index: 999;
-        background-color: #ffffff; /* Fallback for light mode */
-        box-shadow: 0 2px 4px -2px rgba(0,0,0,0.1);
-    }
-    .stApp[data-theme="dark"] div[data-testid="stTabs"] > div[role="tablist"] {
-        background-color: #0e1117 !important; /* Dark mode background */
-    }
-
-    /* Styles the text inside the tab button */
-    button[data-testid="stTab"] p {
-        font-size: 24px !important; /* Large font from previous version */
-        font-weight: 600 !important;
-        color: #555555;
-        transition: color 0.2s ease-in-out;
-    }
-    .stApp[data-theme="dark"] button[data-testid="stTab"] p {
-        color: #a0a0a0;
-    }
+    /* --- 5. CONSOLIDATED MODERN TAB DESIGN --- */
 
     /* Styles the tab button container */
     button[data-testid="stTab"] {
@@ -302,7 +327,7 @@ styling = """
         color: #fff;
         text-align: left;
         font-style: normal;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: normal;
         border-radius: 6px;
         padding: 10px;

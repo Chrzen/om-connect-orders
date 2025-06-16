@@ -1,3 +1,19 @@
+
+# // [OMC v2.0]–––––––––––––––––––––––––––––––––––––––––––––[STATUS: ONLINE]
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                                                              ║
+# ║    OOOOOOO   MM     MM   CCCCCC   VV     VV  222222   ..   000000             ║
+# ║   OO     OO  MMM   MMM  CC        VV     VV 22    22 .  .  00    00            ║
+# ║  OO       OO MM M M MM CC          VV   VV      22   .  . 00    00            ║
+# ║  OO       OO MM  M  MM CC           VV VV      22    ..  00    00            ║
+# ║  OO       OO MM     MM CC            VVV      22         00    00            ║
+# ║   OO     OO  MM     MM  CC            V      22          00    00            ║
+# ║    OOOOOOO   MM     MM   CCCCCC       V     2222222      000000             ║
+# ║                                                                              ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+# // [████████████████████████████████████████████████████████████] [100%]
+
+
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go

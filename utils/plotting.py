@@ -7,6 +7,9 @@ import plotly.express as px
 import numpy as np
 from scipy import optimize
 from config.config import oldmutual_palette, negative_color
+from config.config import apply_old_mutual_styling
+from config.config import oldmutual_palette, negative_color, DEFAULT_HOVER_STYLE
+
 
 # ----------------------------------------
 # Plotting Functions with Error Handling
@@ -1036,10 +1039,11 @@ def plot_geo_demographic_overview(df):
         opacity=0.6
     ), secondary_y=False, row=1, col=1)
 
+    
     # (Reverted) Line for Orders per SIM
     fig.add_trace(go.Scatter(
         x=province_metrics.index, y=province_metrics['orders_per_sim'],
-        name='Orders per SIM', line=dict(color="#8CC63F", width=3),
+        line=dict(color="#8CC63F", width=3),
         hovertemplate='Orders per SIM: %{y:.2f}<extra></extra>'
     ), secondary_y=True, row=1, col=1)
 
@@ -1054,7 +1058,7 @@ def plot_geo_demographic_overview(df):
     # Bar for Total Revenue
     fig.add_trace(go.Bar(
         x=age_metrics.index, y=age_metrics['total_revenue'],
-        name='Total Revenue', marker_color=oldmutual_palette[3],
+        marker_color=oldmutual_palette[3],
         hovertemplate='<b>%{x}</b><br>Revenue: R%{y:,.2f}<extra></extra>',
         opacity=0.6
     ), secondary_y=False, row=1, col=2)
@@ -1079,40 +1083,85 @@ def plot_geo_demographic_overview(df):
     
     return fig
 
-def plot_product_correlation_matrix(df):
-    """
-    Calculates and displays a correlation matrix showing which products are
-    often purchased by the same customers.
-    """
-    top_12_products = df['product_name'].value_counts().nlargest(12).index
-    df_top_products = df[df['product_name'].isin(top_12_products)]
+# def plot_product_correlation_matrix(df):
+#     """
+#     Calculates and displays a correlation matrix showing which products are
+#     often purchased by the same customers.
+#     """
+#     top_12_products = df['product_name'].value_counts().nlargest(12).index
+#     df_top_products = df[df['product_name'].isin(top_12_products)]
 
-    purchase_matrix = pd.crosstab(df_top_products['sim_msisdn'], df_top_products['product_name'])
-    purchase_matrix_binary = (purchase_matrix > 0).astype(int)
+#     purchase_matrix = pd.crosstab(df_top_products['sim_msisdn'], df_top_products['product_name'])
+#     purchase_matrix_binary = (purchase_matrix > 0).astype(int)
 
-    product_correlation = purchase_matrix_binary.corr()
+#     product_correlation = purchase_matrix_binary.corr()
 
-    # CORRECTED: Use a custom diverging colorscale with the oldmutual_palette
-    fig = go.Figure(go.Heatmap(
-        z=product_correlation.values,
-        x=product_correlation.columns,
-        y=product_correlation.columns,
-        colorscale=[[0.0, negative_color], [0.5, "#e6e6e6"], [1.0, oldmutual_palette[0]]],
-        zmid=0, # Center the colorscale on zero
-        text=product_correlation.round(2).values,
-        texttemplate="%{text}",
-        hovertemplate='<b>%{x}</b> vs <b>%{y}</b><br>Correlation: %{z:.2f}<extra></extra>'
-    ))
+#     # CORRECTED: Use a custom diverging colorscale with the oldmutual_palette
+#     # CORRECTED: Use a valid hex code for the middle color
+#     fig = go.Figure(go.Heatmap(
+#         z=product_correlation.values,
+#         x=product_correlation.columns,
+#         y=product_correlation.columns,
+#         colorscale=[[0.0, negative_color], [0.5, "#e6e6e6"], [1.0, oldmutual_palette[0]]], # Corrected this line
+#         zmid=0,
+#         text=product_correlation.round(2).values,
+#         texttemplate="%{text}",
+#         hovertemplate='<b>%{x}</b> vs <b>%{y}</b><br>Correlation: %{z:.2f}<extra></extra>'
+#     ))
 
-    fig.update_layout(
-        title_text='Product Purchase Correlation (Top 12 Products)',
-        height=500,
-        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        font_color='white',
-        xaxis_showgrid=False, yaxis_showgrid=False
-    )
-    fig.update_xaxes(tickangle=30)
-    return fig
+#     fig.update_layout(
+#         height=500,
+#         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+#         font_color='white',
+#         xaxis_showgrid=False, yaxis_showgrid=False
+#     )
+#     fig.update_xaxes(tickangle=30)
+#     return fig
+
+# def plot_product_correlation_matrix(df):
+#     """
+#     Calculates and displays a correlation matrix showing which products are
+#     often purchased by the same customers.
+#     """
+#     top_12_products = df['product_name'].value_counts().nlargest(12).index
+#     df_top_products = df[df['product_name'].isin(top_12_products)]
+
+#     purchase_matrix = pd.crosstab(df_top_products['sim_msisdn'], df_top_products['product_name'])
+#     purchase_matrix_binary = (purchase_matrix > 0).astype(int)
+
+#     product_correlation = purchase_matrix_binary.corr()
+
+#     # --- START DEBUGGING ---
+#     # Define the colorscale in a variable first
+#     my_colorscale = [[0.0, negative_color], [0.5, "#E6E6E6"], [1.0, oldmutual_palette[0]]]
+
+#     # Print the variable to the terminal/console to see its actual value at runtime
+#     print("--- DEBUGGING: THIS IS THE ACTUAL COLORSCALE BEING USED ---")
+#     print(my_colorscale)
+#     print("-------------------------------------------------------------")
+#     # --- END DEBUGGING ---
+
+
+#     # CORRECTED: Use the new variable in the Figure
+#     fig = go.Figure(go.Heatmap(
+#         z=product_correlation.values,
+#         x=product_correlation.columns,
+#         y=product_correlation.columns,
+#         colorscale=my_colorscale, # Use the variable here
+#         zmid=0,
+#         text=product_correlation.round(2).values,
+#         texttemplate="%{text}",
+#         hovertemplate='<b>%{x}</b> vs <b>%{y}</b><br>Correlation: %{z:.2f}<extra></extra>'
+#     ))
+
+#     fig.update_layout(
+#         height=500,
+#         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+#         font_color='white',
+#         xaxis_showgrid=False, yaxis_showgrid=False
+#     )
+#     fig.update_xaxes(tickangle=30)
+#     return fig
 
 def plot_hierarchical_sunburst(df):
     """
@@ -1132,7 +1181,7 @@ def plot_hierarchical_sunburst(df):
         path=['province', 'age_group', 'product_category'],
         values='retail_amount',
         color='retail_amount',
-        color_continuous_scale=px.colors.sequential.Aggrnyl,
+        color_continuous_scale=[oldmutual_palette[1], oldmutual_palette[4]],
         title="Hierarchical View of Revenue: Province -> Age Group -> Product"
     )
 
@@ -1172,11 +1221,62 @@ def plot_product_correlation_matrix(df):
     ))
 
     fig.update_layout(
-        title_text='Product Purchase Correlation (Top 12 Products)',
         height=500,
         plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
-        font_color='white',
+        font_color='black',
         xaxis_showgrid=False, yaxis_showgrid=False
     )
     fig.update_xaxes(tickangle=30)
+
+    fig = apply_old_mutual_styling(fig)
+
+    return fig
+
+# In plotting.py
+
+def plot_product_correlation_matrix(df):
+    """
+    Calculates and displays a product correlation heatmap using old_mutual_palette.
+    """
+    # Get top 12 products
+    top_12 = df['product_name'].value_counts().nlargest(12).index
+    df_top = df[df['product_name'].isin(top_12)]
+
+    # Build binary purchase matrix
+    matrix = pd.crosstab(df_top['sim_msisdn'], df_top['product_name'])
+    corr = matrix.corr()
+
+    # Create heatmap
+    fig = go.Figure(go.Heatmap(
+        z=corr.values,
+        x=corr.columns,
+        y=corr.columns,
+        colorscale=[
+            [0.0, negative_color],
+            [0.5, "#E6E6E6"],
+            [1.0, oldmutual_palette[0]]
+        ],
+        zmid=0,
+        text=corr.round(2).values,
+        texttemplate="%{text}",
+        hovertemplate='<b>%{x}</b> vs <b>%{y}</b><br>Correlation: %{z:.2f}<extra></extra>'
+    ))
+
+    # Dark text in cells
+    fig.update_traces(textfont=dict(color='black'))
+
+    # Layout & theming
+    fig.update_layout(
+        title_text='Product Purchase Correlation (Top 12 Products)',
+        height=500,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font_color='#FFFFFF',        # axis labels and title in white
+        hoverlabel=DEFAULT_HOVER_STYLE,
+        xaxis_showgrid=False,
+        yaxis_showgrid=False,
+        margin=dict(l=100, r=100, t=100, b=100)
+    )
+    fig.update_xaxes(tickangle=30)
+
     return fig

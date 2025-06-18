@@ -4,19 +4,27 @@ import textwrap
 TABLE_NAME = "APP_SCHEMA.ORDER_DATA_10062025"
 
 # Default Plotly hover styling
+# DEFAULT_HOVER_STYLE = dict(
+#     bgcolor="rgba(0, 82, 76, 0.95)",
+#     bordercolor="#8CC63F",
+#     font_color="white",
+#     font_size=14,
+#     font_family="sans serif"
+# )
+
 DEFAULT_HOVER_STYLE = dict(
-    bgcolor="rgba(0, 82, 76, 0.95)",
-    bordercolor="#8CC63F",
-    font_color="white",
-    font_size=14,
-    font_family="sans serif"
+    # bgcolor="rgba(0, 82, 76, 0.95)",      # dark green hover bg
+    bgcolor="#8CC63F",
+    bordercolor="#8CC63F",                # accent border
+    font_color="#FFFFFF",                 # white hover text
+    font_size=14
 )
 
-# Default Plotly layout configuration
+# 2. Use old_mutual_palette and negative_color for all plot text/colors
 DEFAULT_PLOTLY_LAYOUT = dict(
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)',
-    font_color='white',
+    font_color='#FFFFFF',                 # white chart text
     hoverlabel=DEFAULT_HOVER_STYLE
 )
 
@@ -26,7 +34,7 @@ def apply_old_mutual_styling(fig):
     fig.update_layout(
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        font_color='white',
+        font_color='black',
         hoverlabel=DEFAULT_HOVER_STYLE
     )
     fig.update_xaxes(gridcolor='rgba(255, 255, 255, 0.2)')

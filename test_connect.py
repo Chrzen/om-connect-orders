@@ -14,7 +14,7 @@ try:
     
     # Test a simple query
     cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM ORDER_DATA")
+    cursor.execute("SELECT * FROM ORDER_DATA LIMIT 10")
     result = cursor.fetchone()
     print(f"✅ Found {result[0]} rows in ORDER_DATA table")
     
